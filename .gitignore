@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python-version
+.DS_Store
+Thumbs.db
+
+models/
+uploads/
+outputs/
+
+.venv/
+runtime/
+PaddleOCR/
+
+*.log
