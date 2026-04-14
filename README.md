@@ -8,6 +8,10 @@
 - 面向 NVIDIA 机器的 GPU 独立虚拟环境
 - 可共享的本地模型缓存目录
 
+许可证：
+
+- `MIT`
+
 适合这些场景：
 
 - 需要完全离线运行 OCR
@@ -93,6 +97,15 @@ uv venv .\.venv-cpu --python 3.10
 .\.venv-cpu\Scripts\python.exe -m pip install "paddleocr[all]" fastapi uvicorn[standard] python-multipart
 ```
 
+也可以使用依赖文件：
+
+```powershell
+uv venv .\.venv-cpu --python 3.10
+.\.venv-cpu\Scripts\python.exe -m ensurepip --upgrade
+.\.venv-cpu\Scripts\python.exe -m pip install --upgrade pip setuptools wheel
+.\.venv-cpu\Scripts\python.exe -m pip install -r .\requirements-cpu.txt -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+```
+
 ### 3. 创建 GPU 环境
 
 只有在 NVIDIA 机器上才需要。
@@ -103,6 +116,15 @@ uv venv .\.venv-gpu --python 3.10
 .\.venv-gpu\Scripts\python.exe -m pip install --upgrade pip setuptools wheel
 .\.venv-gpu\Scripts\python.exe -m pip install paddlepaddle-gpu==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
 .\.venv-gpu\Scripts\python.exe -m pip install "paddleocr[all]" fastapi uvicorn[standard] python-multipart
+```
+
+也可以使用依赖文件：
+
+```powershell
+uv venv .\.venv-gpu --python 3.10
+.\.venv-gpu\Scripts\python.exe -m ensurepip --upgrade
+.\.venv-gpu\Scripts\python.exe -m pip install --upgrade pip setuptools wheel
+.\.venv-gpu\Scripts\python.exe -m pip install -r .\requirements-gpu-cu126.txt -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
 ```
 
 ### 4. 预下载模型
@@ -163,6 +185,10 @@ offline-paddleocr/
   命令行入口，支持普通 OCR 和 PP-StructureV3
 - `prefetch_models.py`
   首次下载并缓存模型
+- `requirements-cpu.txt`
+  CPU 环境依赖清单
+- `requirements-gpu-cu126.txt`
+  GPU 环境依赖清单
 - `models/paddlex_cache`
   本地模型缓存目录，CPU 和 GPU 共用
 - `start_cpu.cmd` / `start_gpu.cmd`
