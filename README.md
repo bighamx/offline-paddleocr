@@ -61,6 +61,100 @@ $env:OCR_MODEL_SOURCE="huggingface"
 .\prefetch_cpu.cmd
 ```
 
+## 环境准备
+
+这个公开仓库默认 **不包含** 本地虚拟环境、模型缓存、上游 PaddleOCR 源码仓库，所以第一次使用前需要先准备 Python 环境。
+
+推荐 Python 版本：
+
+```text
+Python 3.10
+```
+
+### 1. 安装 Python 3.10
+
+如果你已经有可用的 Python 3.10，可以跳过这一步。
+
+推荐使用 `uv`：
+
+```powershell
+uv python install 3.10
+```
+
+### 2. 创建 CPU 环境
+
+在仓库根目录执行：
+
+```powershell
+uv venv .\.venv-cpu --python 3.10
+.\.venv-cpu\Scripts\python.exe -m ensurepip --upgrade
+.\.venv-cpu\Scripts\python.exe -m pip install --upgrade pip setuptools wheel
+.\.venv-cpu\Scripts\python.exe -m pip install paddlepaddle==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+.\.venv-cpu\Scripts\python.exe -m pip install "paddleocr[all]" fastapi uvicorn[standard] python-multipart
+```
+
+### 3. 创建 GPU 环境
+
+只有在 NVIDIA 机器上才需要。
+
+```powershell
+uv venv .\.venv-gpu --python 3.10
+.\.venv-gpu\Scripts\python.exe -m ensurepip --upgrade
+.\.venv-gpu\Scripts\python.exe -m pip install --upgrade pip setuptools wheel
+.\.venv-gpu\Scripts\python.exe -m pip install paddlepaddle-gpu==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
+.\.venv-gpu\Scripts\python.exe -m pip install "paddleocr[all]" fastapi uvicorn[standard] python-multipart
+```
+
+### 4. 预下载模型
+
+CPU：
+
+```powershell
+.\prefetch_cpu.cmd
+```
+
+GPU：
+
+```powershell
+.\prefetch_gpu.cmd
+```
+
+### 5. 启动服务或命令行调用
+
+启动 CPU 服务：
+
+```powershell
+.\start_cpu.cmd
+```
+
+### 6. 如果你不想使用 `.venv-cpu/.venv-gpu`
+
+也可以手动指定解释器路径：
+
+```powershell
+$env:OCR_PYTHON="D:\python-envs\ocr310\Scripts\python.exe"
+.\ocr_cpu.cmd -i .\image.jpg
+```
+
+## 运行脚本如何找 Python
+
+项目中的 `.cmd` 脚本按下面顺序查找 Python：
+
+1. `OCR_PYTHON`
+2. 仓库根目录下的 `.venv-cpu` / `.venv-gpu`
+3. 兼容旧目录结构的 `../../runtime/.venv-cpu` / `../../runtime/.venv-gpu`
+
+所以公开仓库推荐的标准布局是：
+
+```text
+offline-paddleocr/
+  .venv-cpu/
+  .venv-gpu/
+  app.py
+  cli.py
+  ...
+```
+
 ## 目录说明
 
 - `app.py`
@@ -120,15 +214,15 @@ $env:OCR_MODEL_SOURCE="aistudio"
 也可以直接给底层预下载脚本传参数：
 
 ```powershell
-..\..\runtime\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source modelscope
+.\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source modelscope
 ```
 
 ```powershell
-..\..\runtime\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source huggingface
+.\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source huggingface
 ```
 
 ```powershell
-..\..\runtime\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source aistudio
+.\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source aistudio
 ```
 
 ## 运行方式总览
@@ -227,11 +321,11 @@ curl.exe -X POST -F "file=@.\document.png" -F "device=gpu:0" http://127.0.0.1:18
 ### 使用底层 Python CLI
 
 ```powershell
-..\..\runtime\.venv-cpu\Scripts\python.exe .\cli.py ocr -i .\image.jpg
+.\.venv-cpu\Scripts\python.exe .\cli.py ocr -i .\image.jpg
 ```
 
 ```powershell
-..\..\runtime\.venv-gpu\Scripts\python.exe .\cli.py ocr -i .\image.jpg --device gpu:0
+.\.venv-gpu\Scripts\python.exe .\cli.py ocr -i .\image.jpg --device gpu:0
 ```
 
 ## 方式三：命令行执行 PP-StructureV3 版面分析
@@ -259,11 +353,11 @@ curl.exe -X POST -F "file=@.\document.png" -F "device=gpu:0" http://127.0.0.1:18
 ### 使用底层 Python CLI
 
 ```powershell
-..\..\runtime\.venv-cpu\Scripts\python.exe .\cli.py structure -i .\document.png
+.\.venv-cpu\Scripts\python.exe .\cli.py structure -i .\document.png
 ```
 
 ```powershell
-..\..\runtime\.venv-gpu\Scripts\python.exe .\cli.py structure -i .\document.png --device gpu:0
+.\.venv-gpu\Scripts\python.exe .\cli.py structure -i .\document.png --device gpu:0
 ```
 
 ## 方式四：直接运行 Python 服务入口
@@ -272,14 +366,14 @@ curl.exe -X POST -F "file=@.\document.png" -F "device=gpu:0" http://127.0.0.1:18
 
 ```powershell
 set OCR_DEVICE=cpu
-..\..\runtime\.venv-cpu\Scripts\python.exe .\app.py
+.\.venv-cpu\Scripts\python.exe .\app.py
 ```
 
 ### GPU
 
 ```powershell
 set OCR_DEVICE=gpu:0
-..\..\runtime\.venv-gpu\Scripts\python.exe .\app.py
+.\.venv-gpu\Scripts\python.exe .\app.py
 ```
 
 ## CPU / GPU 切换规则
@@ -331,4 +425,3 @@ set OCR_DEVICE=gpu:0
 
 - 当前默认 OCR 封装走的是通用 OCR 和 `PP-StructureV3`
 - 第一次预下载完成后，可以完全离线运行
-- GPU 环境已经准备好，但只有在真实 NVIDIA 机器上才能完成 GPU 推理验证
