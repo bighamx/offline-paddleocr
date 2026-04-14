@@ -6,6 +6,7 @@ from common import (
     PADDLEX_CACHE_DIR,
     dumps_pretty,
     ensure_runtime_env,
+    get_model_source,
     normalize_device,
     run_ocr,
     run_structure,
@@ -22,6 +23,7 @@ def health(device: str | None = None):
     return {
         "ok": True,
         "device": normalize_device(device),
+        "model_source": get_model_source(),
         "cache_dir": str(PADDLEX_CACHE_DIR),
     }
 

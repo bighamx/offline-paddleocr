@@ -17,6 +17,22 @@
 
 只要先完成一次模型预下载，后续断网也可以继续运行。
 
+## 模型下载源
+
+项目现在支持 3 种模型下载源：
+
+- `modelscope`
+- `huggingface`
+- `aistudio`
+
+默认下载源是：
+
+```text
+modelscope
+```
+
+也就是更适合国内网络环境的配置。
+
 ## 快速开始
 
 在当前目录执行：
@@ -36,6 +52,13 @@ http://127.0.0.1:18080/health
 
 ```powershell
 .\ocr_cpu.cmd -i .\sample.png
+```
+
+如果想临时切换下载源，例如切到 Hugging Face：
+
+```powershell
+$env:OCR_MODEL_SOURCE="huggingface"
+.\prefetch_cpu.cmd
 ```
 
 ## 目录说明
@@ -74,6 +97,39 @@ CPU 机器执行：
 ```
 
 模型下载完成后，运行时会优先使用本地缓存，不再依赖联网。
+
+### 指定下载源
+
+可以通过环境变量切换下载源：
+
+```powershell
+$env:OCR_MODEL_SOURCE="modelscope"
+.\prefetch_cpu.cmd
+```
+
+```powershell
+$env:OCR_MODEL_SOURCE="huggingface"
+.\prefetch_cpu.cmd
+```
+
+```powershell
+$env:OCR_MODEL_SOURCE="aistudio"
+.\prefetch_cpu.cmd
+```
+
+也可以直接给底层预下载脚本传参数：
+
+```powershell
+..\..\runtime\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source modelscope
+```
+
+```powershell
+..\..\runtime\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source huggingface
+```
+
+```powershell
+..\..\runtime\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source aistudio
+```
 
 ## 运行方式总览
 
@@ -237,6 +293,10 @@ set OCR_DEVICE=gpu:0
 ### `GET /health`
 
 返回服务状态、当前设备和本地缓存目录。
+
+返回字段中还会包含：
+
+- `model_source`
 
 ### `POST /ocr`
 

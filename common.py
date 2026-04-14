@@ -11,6 +11,8 @@ PADDLEOCR_REPO_DIR = WORKSPACE_DIR / "PaddleOCR"
 MODELS_DIR = BASE_DIR / "models"
 PADDLEX_CACHE_DIR = MODELS_DIR / "paddlex_cache"
 UPLOAD_DIR = BASE_DIR / "uploads"
+DEFAULT_MODEL_SOURCE = "modelscope"
+SUPPORTED_MODEL_SOURCES = {"modelscope", "huggingface", "aistudio"}
 
 
 def ensure_runtime_env() -> None:
@@ -18,14 +20,31 @@ def ensure_runtime_env() -> None:
     PADDLEX_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("PADDLE_PDX_CACHE_HOME", str(PADDLEX_CACHE_DIR))
-    os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
-    os.environ.setdefault("PADDLE_PDX_MODEL_SOURCE", "huggingface")
+    os.environ.setdefault(
+        "PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK",
+        os.environ.get("OCR_DISABLE_SOURCE_CHECK", "True"),
+    )
+    os.environ.setdefault("PADDLE_PDX_MODEL_SOURCE", get_model_source())
 
 
 def normalize_device(device: str | None) -> str:
     if not device:
         return os.environ.get("OCR_DEVICE", "cpu")
     return device
+
+
+def get_model_source() -> str:
+    source = (
+        os.environ.get("OCR_MODEL_SOURCE")
+        or os.environ.get("PADDLE_PDX_MODEL_SOURCE")
+        or DEFAULT_MODEL_SOURCE
+    ).lower()
+    if source not in SUPPORTED_MODEL_SOURCES:
+        raise ValueError(
+            f"Unsupported model source: {source}. "
+            f"Supported values: {sorted(SUPPORTED_MODEL_SOURCES)}"
+        )
+    return source
 
 
 def get_demo_ocr_input() -> Path:
