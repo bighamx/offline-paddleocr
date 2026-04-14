@@ -1,6 +1,6 @@
-# PaddleOCR 本地离线版
+# Offline PaddleOCR
 
-这个目录是一套可在 Windows 上本地离线运行的 PaddleOCR 部署，包含：
+一个面向 Windows 的 PaddleOCR 本地离线部署包装项目，提供：
 
 - 本地命令行 OCR 入口
 - 本地 HTTP 服务
@@ -8,7 +8,35 @@
 - 面向 NVIDIA 机器的 GPU 独立虚拟环境
 - 可共享的本地模型缓存目录
 
+适合这些场景：
+
+- 需要完全离线运行 OCR
+- 需要在 CPU / GPU 之间快速切换
+- 需要给本地工具、脚本或其它程序提供 HTTP OCR 服务
+- 不想直接处理 PaddleOCR 大仓库里的复杂组件
+
 只要先完成一次模型预下载，后续断网也可以继续运行。
+
+## 快速开始
+
+在当前目录执行：
+
+```powershell
+.\prefetch_cpu.cmd
+.\start_cpu.cmd
+```
+
+然后访问：
+
+```text
+http://127.0.0.1:18080/health
+```
+
+或者直接命令行识别：
+
+```powershell
+.\ocr_cpu.cmd -i .\sample.png
+```
 
 ## 目录说明
 
@@ -36,14 +64,12 @@
 CPU 机器执行：
 
 ```powershell
-cd E:\GIT\ocr\deploy\offline_paddleocr
 .\prefetch_cpu.cmd
 ```
 
 如果以后要在 NVIDIA 机器上运行，也可以执行：
 
 ```powershell
-cd E:\GIT\ocr\deploy\offline_paddleocr
 .\prefetch_gpu.cmd
 ```
 
@@ -63,14 +89,12 @@ cd E:\GIT\ocr\deploy\offline_paddleocr
 ### CPU 服务
 
 ```powershell
-cd E:\GIT\ocr\deploy\offline_paddleocr
 .\start_cpu.cmd
 ```
 
 ### GPU 服务
 
 ```powershell
-cd E:\GIT\ocr\deploy\offline_paddleocr
 .\start_gpu.cmd
 ```
 
@@ -97,31 +121,31 @@ curl.exe http://127.0.0.1:18080/health
 ### 调用普通 OCR 接口
 
 ```powershell
-curl.exe -X POST -F "file=@E:\path\to\image.jpg" http://127.0.0.1:18080/ocr
+curl.exe -X POST -F "file=@.\image.jpg" http://127.0.0.1:18080/ocr
 ```
 
 指定设备也可以这样传：
 
 ```powershell
-curl.exe -X POST -F "file=@E:\path\to\image.jpg" -F "device=cpu" http://127.0.0.1:18080/ocr
+curl.exe -X POST -F "file=@.\image.jpg" -F "device=cpu" http://127.0.0.1:18080/ocr
 ```
 
 如果是在有 NVIDIA 的机器上：
 
 ```powershell
-curl.exe -X POST -F "file=@E:\path\to\image.jpg" -F "device=gpu:0" http://127.0.0.1:18080/ocr
+curl.exe -X POST -F "file=@.\image.jpg" -F "device=gpu:0" http://127.0.0.1:18080/ocr
 ```
 
 ### 调用版面分析接口
 
 ```powershell
-curl.exe -X POST -F "file=@E:\path\to\document.png" http://127.0.0.1:18080/structure
+curl.exe -X POST -F "file=@.\document.png" http://127.0.0.1:18080/structure
 ```
 
 指定 GPU：
 
 ```powershell
-curl.exe -X POST -F "file=@E:\path\to\document.png" -F "device=gpu:0" http://127.0.0.1:18080/structure
+curl.exe -X POST -F "file=@.\document.png" -F "device=gpu:0" http://127.0.0.1:18080/structure
 ```
 
 ## 方式二：命令行执行通用 OCR
@@ -129,31 +153,29 @@ curl.exe -X POST -F "file=@E:\path\to\document.png" -F "device=gpu:0" http://127
 ### CPU
 
 ```powershell
-cd E:\GIT\ocr\deploy\offline_paddleocr
-.\ocr_cpu.cmd -i E:\path\to\image.jpg
+.\ocr_cpu.cmd -i .\image.jpg
 ```
 
 ### GPU
 
 ```powershell
-cd E:\GIT\ocr\deploy\offline_paddleocr
-.\ocr_gpu.cmd -i E:\path\to\image.jpg
+.\ocr_gpu.cmd -i .\image.jpg
 ```
 
 ### 保存结果到 JSON 文件
 
 ```powershell
-.\ocr_cpu.cmd -i E:\path\to\image.jpg -o E:\path\to\ocr_result.json
+.\ocr_cpu.cmd -i .\image.jpg -o .\ocr_result.json
 ```
 
 ### 使用底层 Python CLI
 
 ```powershell
-E:\GIT\ocr\runtime\.venv-cpu\Scripts\python.exe E:\GIT\ocr\deploy\offline_paddleocr\cli.py ocr -i E:\path\to\image.jpg
+..\..\runtime\.venv-cpu\Scripts\python.exe .\cli.py ocr -i .\image.jpg
 ```
 
 ```powershell
-E:\GIT\ocr\runtime\.venv-gpu\Scripts\python.exe E:\GIT\ocr\deploy\offline_paddleocr\cli.py ocr -i E:\path\to\image.jpg --device gpu:0
+..\..\runtime\.venv-gpu\Scripts\python.exe .\cli.py ocr -i .\image.jpg --device gpu:0
 ```
 
 ## 方式三：命令行执行 PP-StructureV3 版面分析
@@ -163,31 +185,29 @@ E:\GIT\ocr\runtime\.venv-gpu\Scripts\python.exe E:\GIT\ocr\deploy\offline_paddle
 ### CPU
 
 ```powershell
-cd E:\GIT\ocr\deploy\offline_paddleocr
-.\structure_cpu.cmd -i E:\path\to\document.png
+.\structure_cpu.cmd -i .\document.png
 ```
 
 ### GPU
 
 ```powershell
-cd E:\GIT\ocr\deploy\offline_paddleocr
-.\structure_gpu.cmd -i E:\path\to\document.png
+.\structure_gpu.cmd -i .\document.png
 ```
 
 ### 保存结果到 JSON 文件
 
 ```powershell
-.\structure_cpu.cmd -i E:\path\to\document.png -o E:\path\to\structure_result.json
+.\structure_cpu.cmd -i .\document.png -o .\structure_result.json
 ```
 
 ### 使用底层 Python CLI
 
 ```powershell
-E:\GIT\ocr\runtime\.venv-cpu\Scripts\python.exe E:\GIT\ocr\deploy\offline_paddleocr\cli.py structure -i E:\path\to\document.png
+..\..\runtime\.venv-cpu\Scripts\python.exe .\cli.py structure -i .\document.png
 ```
 
 ```powershell
-E:\GIT\ocr\runtime\.venv-gpu\Scripts\python.exe E:\GIT\ocr\deploy\offline_paddleocr\cli.py structure -i E:\path\to\document.png --device gpu:0
+..\..\runtime\.venv-gpu\Scripts\python.exe .\cli.py structure -i .\document.png --device gpu:0
 ```
 
 ## 方式四：直接运行 Python 服务入口
@@ -196,14 +216,14 @@ E:\GIT\ocr\runtime\.venv-gpu\Scripts\python.exe E:\GIT\ocr\deploy\offline_paddle
 
 ```powershell
 set OCR_DEVICE=cpu
-E:\GIT\ocr\runtime\.venv-cpu\Scripts\python.exe E:\GIT\ocr\deploy\offline_paddleocr\app.py
+..\..\runtime\.venv-cpu\Scripts\python.exe .\app.py
 ```
 
 ### GPU
 
 ```powershell
 set OCR_DEVICE=gpu:0
-E:\GIT\ocr\runtime\.venv-gpu\Scripts\python.exe E:\GIT\ocr\deploy\offline_paddleocr\app.py
+..\..\runtime\.venv-gpu\Scripts\python.exe .\app.py
 ```
 
 ## CPU / GPU 切换规则
