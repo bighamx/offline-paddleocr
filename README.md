@@ -21,22 +21,6 @@
 
 只要先完成一次模型预下载，后续断网也可以继续运行。
 
-## 模型下载源
-
-项目现在支持 3 种模型下载源：
-
-- `modelscope`
-- `huggingface`
-- `aistudio`
-
-默认下载源是：
-
-```text
-modelscope
-```
-
-也就是更适合国内网络环境的配置。
-
 ## 快速开始
 
 在当前目录执行：
@@ -56,13 +40,6 @@ http://127.0.0.1:18080/health
 
 ```powershell
 .\ocr_cpu.cmd -i .\sample.png
-```
-
-如果想临时切换下载源，例如切到 Hugging Face：
-
-```powershell
-$env:OCR_MODEL_SOURCE="huggingface"
-.\prefetch_cpu.cmd
 ```
 
 ## 环境准备
@@ -127,29 +104,7 @@ uv venv .\.venv-gpu --python 3.10
 .\.venv-gpu\Scripts\python.exe -m pip install -r .\requirements-gpu-cu126.txt -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
 ```
 
-### 4. 预下载模型
-
-CPU：
-
-```powershell
-.\prefetch_cpu.cmd
-```
-
-GPU：
-
-```powershell
-.\prefetch_gpu.cmd
-```
-
-### 5. 启动服务或命令行调用
-
-启动 CPU 服务：
-
-```powershell
-.\start_cpu.cmd
-```
-
-### 6. 如果你不想使用 `.venv-cpu/.venv-gpu`
+### 4. 如果你不想使用 `.venv-cpu/.venv-gpu`
 
 也可以手动指定解释器路径：
 
@@ -177,6 +132,71 @@ offline-paddleocr/
   ...
 ```
 
+## 模型预下载与下载源
+
+第一次使用前，建议先预下载模型缓存。
+
+CPU：
+
+```powershell
+.\prefetch_cpu.cmd
+```
+
+GPU：
+
+```powershell
+.\prefetch_gpu.cmd
+```
+
+模型下载完成后，运行时会优先使用本地缓存，不再依赖联网。
+
+### 支持的下载源
+
+项目支持 3 种模型下载源：
+
+- `modelscope`
+- `huggingface`
+- `aistudio`
+
+默认下载源：
+
+```text
+modelscope
+```
+
+也就是更适合国内网络环境的配置。
+
+### 通过环境变量切换下载源
+
+```powershell
+$env:OCR_MODEL_SOURCE="modelscope"
+.\prefetch_cpu.cmd
+```
+
+```powershell
+$env:OCR_MODEL_SOURCE="huggingface"
+.\prefetch_cpu.cmd
+```
+
+```powershell
+$env:OCR_MODEL_SOURCE="aistudio"
+.\prefetch_cpu.cmd
+```
+
+### 通过脚本参数切换下载源
+
+```powershell
+.\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source modelscope
+```
+
+```powershell
+.\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source huggingface
+```
+
+```powershell
+.\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source aistudio
+```
+
 ## 目录说明
 
 - `app.py`
@@ -199,57 +219,6 @@ offline-paddleocr/
   命令行执行 PP-StructureV3 版面分析
 - `prefetch_cpu.cmd` / `prefetch_gpu.cmd`
   预下载模型，供离线运行使用
-
-## 首次使用
-
-第一次使用前，建议先下载模型缓存。
-
-CPU 机器执行：
-
-```powershell
-.\prefetch_cpu.cmd
-```
-
-如果以后要在 NVIDIA 机器上运行，也可以执行：
-
-```powershell
-.\prefetch_gpu.cmd
-```
-
-模型下载完成后，运行时会优先使用本地缓存，不再依赖联网。
-
-### 指定下载源
-
-可以通过环境变量切换下载源：
-
-```powershell
-$env:OCR_MODEL_SOURCE="modelscope"
-.\prefetch_cpu.cmd
-```
-
-```powershell
-$env:OCR_MODEL_SOURCE="huggingface"
-.\prefetch_cpu.cmd
-```
-
-```powershell
-$env:OCR_MODEL_SOURCE="aistudio"
-.\prefetch_cpu.cmd
-```
-
-也可以直接给底层预下载脚本传参数：
-
-```powershell
-.\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source modelscope
-```
-
-```powershell
-.\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source huggingface
-```
-
-```powershell
-.\.venv-cpu\Scripts\python.exe .\prefetch_models.py --model-source aistudio
-```
 
 ## 运行方式总览
 
