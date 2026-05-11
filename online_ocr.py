@@ -1,23 +1,22 @@
 import argparse
+import contextlib
 import importlib
+import logging
 import os
 import sys
-import logging
 import warnings
-import contextlib
 from pathlib import Path
 
-from common import dumps_pretty, run_ocr, run_structure
+from common import dumps_pretty, run_online_ocr
 
 
 @contextlib.contextmanager
 def suppress_stdout_stderr_fd():
-    """A context manager that redirects stdout and stderr to devnull"""
     null_fd = os.open(os.devnull, os.O_RDWR)
     old_stdout, old_stderr = sys.stdout, sys.stderr
-    sys.stdout = open(os.devnull, 'w')
-    sys.stderr = open(os.devnull, 'w')
-    
+    sys.stdout = open(os.devnull, "w")
+    sys.stderr = open(os.devnull, "w")
+
     try:
         save_fd_out = os.dup(1)
         save_fd_err = os.dup(2)
@@ -44,37 +43,31 @@ def suppress_stdout_stderr_fd():
         sys.stderr.close()
         sys.stdout, sys.stderr = old_stdout, old_stderr
 
+
 def suppress_logs() -> None:
     os.environ["GLOG_minloglevel"] = "2"
     warnings.filterwarnings("ignore")
-    logging.getLogger("ppocr").setLevel(logging.ERROR)
-    # Also attempt to silence root logger in case other paddle modules log there
     logging.getLogger().setLevel(logging.ERROR)
-    
     try:
-        from common import ensure_runtime_env
-        ensure_runtime_env()
-        px_logging = importlib.import_module("paddlex.utils.logging")
+        import paddlex.utils.logging as px_logging
+
         px_logging.setup_logging("ERROR")
     except ImportError:
         pass
 
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Offline PaddleOCR CLI")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    for name in ("ocr", "structure"):
-        sub = subparsers.add_parser(name)
-        sub.add_argument("-i", "--input", required=True, help="Input image or PDF path")
-        sub.add_argument(
-            "--device",
-            default=None,
-            help="Device such as cpu or gpu:0. Defaults to OCR_DEVICE env or cpu.",
-        )
-        sub.add_argument("-o", "--output", default=None, help="Output file path")
-        sub.add_argument("--json", action="store_true", help="Output raw JSON instead of plain text")
-        sub.add_argument("--debug", action="store_true", help="Enable debug output and paddle logs")
-
+    parser = argparse.ArgumentParser(description="Baidu Online OCR CLI")
+    parser.add_argument("-i", "--input", required=True, help="Input image path")
+    parser.add_argument("-o", "--output", default=None, help="Output file path")
+    parser.add_argument("--json", action="store_true", help="Output raw JSON instead of plain text")
+    parser.add_argument("--debug", action="store_true", help="Enable debug output")
+    parser.add_argument("--api-key", default=None, help="Baidu OCR API key. Defaults to BAIDU_OCR_API_KEY.")
+    parser.add_argument(
+        "--api-secret",
+        default=None,
+        help="Baidu OCR API secret. Defaults to BAIDU_OCR_API_SECRET.",
+    )
     return parser
 
 
@@ -85,17 +78,11 @@ def main() -> int:
     if not args.debug:
         suppress_logs()
 
-    # Apply fd-level suppression for the OCR processing unless debugging is enabled
     with suppress_stdout_stderr_fd() if not args.debug else contextlib.nullcontext():
-        if args.command == "ocr":
-            payload = run_ocr(args.input, device=args.device)
-            default_text = payload.get("text", "")
-        else:
-            payload = run_structure(args.input, device=args.device)
-            default_text = dumps_pretty(payload)
+        payload = run_online_ocr(args.input, api_key=args.api_key, api_secret=args.api_secret)
+        default_text = payload.get("text", "")
 
     text = dumps_pretty(payload) if args.json else default_text
-    
     if args.output:
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)

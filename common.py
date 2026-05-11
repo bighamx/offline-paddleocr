@@ -1,6 +1,10 @@
 import json
 import os
 import tempfile
+import base64
+import urllib.error
+import urllib.parse
+import urllib.request
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -13,6 +17,8 @@ PADDLEX_CACHE_DIR = MODELS_DIR / "paddlex_cache"
 UPLOAD_DIR = BASE_DIR / "uploads"
 DEFAULT_MODEL_SOURCE = "modelscope"
 SUPPORTED_MODEL_SOURCES = {"modelscope", "huggingface", "aistudio"}
+BAIDU_OCR_TOKEN_URL = "https://aip.baidubce.com/oauth/2.0/token"
+BAIDU_OCR_ACCURATE_URL = "https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic"
 
 
 def ensure_runtime_env() -> None:
@@ -31,6 +37,80 @@ def normalize_device(device: str | None) -> str:
     if not device:
         return os.environ.get("OCR_DEVICE", "cpu")
     return device
+
+
+def get_baidu_api_key() -> str:
+    return os.environ.get("BAIDU_OCR_API_KEY", "")
+
+
+def get_baidu_api_secret() -> str:
+    return os.environ.get("BAIDU_OCR_API_SECRET", "")
+
+
+def _http_json_request(url: str, data: bytes | None = None, headers: dict[str, str] | None = None) -> dict[str, Any]:
+    request = urllib.request.Request(url, data=data, headers=headers or {}, method="POST" if data is not None else "GET")
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            payload = response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        error_text = exc.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"HTTP {exc.code} from {url}: {error_text or exc.reason}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Failed to call {url}: {exc.reason}") from exc
+    return json.loads(payload)
+
+
+def get_baidu_access_token(api_key: str | None = None, api_secret: str | None = None) -> str:
+    key = api_key or get_baidu_api_key()
+    secret = api_secret or get_baidu_api_secret()
+    if not key or not secret:
+        raise ValueError(
+            "Baidu OCR credentials are missing. Set BAIDU_OCR_API_KEY and BAIDU_OCR_API_SECRET."
+        )
+    query = urllib.parse.urlencode(
+        {
+            "grant_type": "client_credentials",
+            "client_id": key,
+            "client_secret": secret,
+        }
+    )
+    response = _http_json_request(f"{BAIDU_OCR_TOKEN_URL}?{query}")
+    token = response.get("access_token")
+    if not token:
+        raise RuntimeError(f"Baidu token response did not include access_token: {response}")
+    return str(token)
+
+
+def run_online_ocr(
+    input_path: str | Path,
+    api_key: str | None = None,
+    api_secret: str | None = None,
+) -> dict[str, Any]:
+    file_path = Path(input_path)
+    image_bytes = file_path.read_bytes()
+    encoded_image = base64.b64encode(image_bytes).decode("ascii")
+    access_token = get_baidu_access_token(api_key=api_key, api_secret=api_secret)
+    request_body = urllib.parse.urlencode({"image": encoded_image}).encode("utf-8")
+    response = _http_json_request(
+        f"{BAIDU_OCR_ACCURATE_URL}?access_token={urllib.parse.quote(access_token)}",
+        data=request_body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    words_result = response.get("words_result", [])
+    text_lines = []
+    if isinstance(words_result, list):
+        for item in words_result:
+            if isinstance(item, dict):
+                word = item.get("words")
+                if word:
+                    text_lines.append(str(word))
+    response["text"] = "\n".join(text_lines)
+    return {
+        "pipeline": "baidu_accurate_basic",
+        "input_path": str(file_path),
+        "text": response["text"],
+        "result": response,
+    }
 
 
 def get_model_source() -> str:

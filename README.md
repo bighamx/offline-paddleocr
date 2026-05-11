@@ -215,6 +215,10 @@ $env:OCR_MODEL_SOURCE="aistudio"
   启动本地 HTTP 服务
 - `ocr_cpu.cmd` / `ocr_gpu.cmd`
   命令行执行通用 OCR
+- `ocr_online.cmd`
+  调用百度在线 OCR，默认输出纯文本，也支持 `--json`
+- `online_ocr.py`
+  在线 OCR 的 Python 入口，由 `ocr_online.cmd` 调用
 - `structure_cpu.cmd` / `structure_gpu.cmd`
   命令行执行 PP-StructureV3 版面分析
 - `prefetch_cpu.cmd` / `prefetch_gpu.cmd`
@@ -305,6 +309,31 @@ curl.exe -X POST -F "file=@.\document.png" -F "device=gpu:0" http://127.0.0.1:18
 
 ```powershell
 .\ocr_gpu.cmd -i .\image.jpg
+```
+
+### 在线 OCR
+
+```powershell
+.\ocr_online.cmd -i .\image.jpg
+```
+
+对应的 Python 入口是：
+
+```powershell
+.\.venv-cpu\Scripts\python.exe .\online_ocr.py -i .\image.jpg
+```
+
+输出 JSON：
+
+```powershell
+.\ocr_online.cmd -i .\image.jpg --json
+```
+
+如果你想改成自己的百度 OCR 凭据，可以在运行前设置：
+
+```powershell
+$env:BAIDU_OCR_API_KEY="你的API Key"
+$env:BAIDU_OCR_API_SECRET="你的API Secret"
 ```
 
 ### 保存结果到 JSON 文件
